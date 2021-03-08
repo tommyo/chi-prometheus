@@ -1,11 +1,12 @@
-// Port https://github.com/zbindenren/negroni-prometheus for chi router
+// Package chiprometheus is a port of https://github.com/zbindenren/negroni-prometheus for chi router
 package chiprometheus
 
 import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -58,8 +59,11 @@ func (c Middleware) handler(next http.Handler) http.Handler {
 		start := time.Now()
 		ww := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 		next.ServeHTTP(ww, r)
-		c.reqs.WithLabelValues(http.StatusText(ww.Status()), r.Method, r.URL.Path).Inc()
-		c.latency.WithLabelValues(http.StatusText(ww.Status()), r.Method, r.URL.Path).Observe(float64(time.Since(start).Nanoseconds()) / 1000000)
+
+		pattern := chi.RouteContext(r.Context()).RoutePattern()
+
+		c.reqs.WithLabelValues(http.StatusText(ww.Status()), r.Method, pattern).Inc()
+		c.latency.WithLabelValues(http.StatusText(ww.Status()), r.Method, pattern).Observe(float64(time.Since(start).Nanoseconds()) / 1000000)
 	}
 	return http.HandlerFunc(fn)
 }

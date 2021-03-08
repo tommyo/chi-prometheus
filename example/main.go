@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 
-	"github.com/766b/chi-prometheus"
-	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	chiprometheus "github.com/tommyo/chi-prometheus"
 )
 
 func main() {
@@ -20,13 +20,21 @@ func main() {
 
 	n.Use(m)
 
-	n.Handle("/metrics", prometheus.Handler())
+	n.Handle("/metrics", promhttp.Handler())
 	n.Get("/ok", func(w http.ResponseWriter, r *http.Request) {
 		sleep := rand.Intn(4999) + 1
 		time.Sleep(time.Duration(sleep) * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprintf(w, "slept %d milliseconds\n", sleep)
 	})
+	n.Get("/echo/{content}", func(w http.ResponseWriter, r *http.Request) {
+		content := chi.URLParam(r, "content")
+		sleep := rand.Intn(4999) + 1
+		time.Sleep(time.Duration(sleep) * time.Millisecond)
+		w.Write([]byte(fmt.Sprintf("echo: %v", content)))
+		fmt.Fprintf(w, "slept %d milliseconds\n", sleep)
+	})
+
 	n.Get("/notfound", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 		fmt.Fprintln(w, "not found")
